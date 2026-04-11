@@ -1,8 +1,12 @@
 const express = require('express');
 const mqtt = require('mqtt');
 const path = require('path');
-const mqttClient = require('./.env');
+require('dotenv').config();
 const app = express();
+const cors = require('cors');
+const { Pool } = require('pg');
+
+app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -12,37 +16,92 @@ app.get('/', (req, res) => {
 app.get('/i/:status', (req, res) => {
 
     const status = req.params.status;
- 
+    
 
     if(status === "on")
     {
-        client.publish("Melder/1/cmnd/POWER", "ON");
+        mqttCon.publish("Melder/1/cmnd/POWER", "ON");
     }
     else
     {
-        client.publish("Melder/1/cmnd/POWER", "OFF");
+        mqttCon .publish("Melder/1/cmnd/POWER", "OFF");
     }
     res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 })
 
+app.post('/login', async (req, res) => {
+         const { username, password } = req.body;
+
+      try {
+    const result = await pool.query('SELECT * FROM users WHERE username = $1 and password =$2', [username,password]);
+    const user = result.rows[0];
+
+    if(!user)
+    {
+        return res.json({ success: false });
+    }
+
+    /*const valid = await bcrypt.compare(password, user.password);
+
+    if (!valid) {
+    return res.json({ success: false });
+    }*/
+
+    return res.json({success: true});
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('DB Error');
+  }
+    
+
+});
+
+app.get('/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('DB Error');
+  }
+});
 
 
-const client = mqtt.connect(
-                                mqttClient.brokerIP,
+
+const mqttCon = mqtt.connect(
+                                process.env.mqttbrokerIP,
                                 {
-                                    username: mqttClient.username,
-                                    password: mqttClient.password
+                                    username: process.env.mqttusername,
+                                    password: process.env.mqttpassword
                                 }
                             );
 
 
-client.on("connect", () => {
+mqttCon .on("connect", () => {
     console.log("Connected to MQTT broker");
 });
 
-client.on("error", (err) => {
+mqttCon .on("error", (err) => {
     console.error("MQTT error:", err);
 });
+
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
+
+pool.connect()
+  .then(client => {
+    console.log("PostgreSQL connected");
+    client.release();
+  })
+  .catch(err => {
+    console.error("DB connection error:", err);
+  });
 
 app.listen(3000, '0.0.0.0', () => {
     console.log("Server running on port 3000");
