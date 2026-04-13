@@ -5,6 +5,7 @@ require('dotenv').config();
 const app = express();
 const cors = require('cors');
 const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 
 app.use(cors());
 app.use(express.json());
@@ -33,19 +34,21 @@ app.post('/login', async (req, res) => {
          const { username, password } = req.body;
 
       try {
-    const result = await pool.query('SELECT * FROM users WHERE username = $1 and password =$2', [username,password]);
+    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     const user = result.rows[0];
+    
 
     if(!user)
     {
         return res.json({ success: false });
     }
 
-    /*const valid = await bcrypt.compare(password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
+
 
     if (!valid) {
     return res.json({ success: false });
-    }*/
+    }
 
     return res.json({success: true});
 
@@ -55,6 +58,34 @@ app.post('/login', async (req, res) => {
   }
     
 
+});
+
+/*
+$body = @{
+    username = "testuser"
+    password = "1234"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:3000/register" `
+    -Method POST `
+    -Body $body `
+    -ContentType "application/json"
+*/
+
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const result = await pool.query('select max(users.id) from users');
+  const id = result.rows.id +1
+
+
+  await pool.query(
+    'INSERT INTO users(id,username, password) VALUES($1, $2, $3)',
+    [id, username, hashedPassword]
+  );
+
+  res.json({ ok: true });
 });
 
 app.get('/users', async (req, res) => {

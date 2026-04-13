@@ -16,13 +16,19 @@ export default function useAuth() {
   const data = await res.json();
 
   if (res.ok) {
-    console.log("Login success", data);
-    setUser(username);
-    return true;
+    
+    if(data.success)
+    {
+      console.log("Login success", data);
+      setUser(username);
+      return true;
+    }
   }
 
   console.log("Login failed", data);
+  setUser(null);
   return false;
+
   };
 
   const logout = () => setUser(null);
