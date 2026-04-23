@@ -9,6 +9,7 @@ export default function useAuth() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      credentials: "include",
     },
     body: JSON.stringify({ username, password }),
   });
@@ -26,7 +27,7 @@ export default function useAuth() {
   }
 
 
-  ßetßzzßfff
+
   console.log("Login failed", data);
   setUser(null);
   return false;

@@ -1,4 +1,5 @@
 //import jwt from 'jsonwebtoken';
+const jwt = require('jsonwebtoken');
 const express = require('express');
 const mqtt = require('mqtt');
 const path = require('path');
@@ -7,8 +8,9 @@ const app = express();
 const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
+const cookieParser = require('cookie-parser');
 
-
+app.use(cookieParser());
 
 app.use(cors({
   origin: 'http://localhost:5173', 
@@ -20,17 +22,16 @@ app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
-app.get('/protected', authenticateToken, (req, res) => {
+app.get('/protected', authenticateToken,  (req, res) => {
   res.json({ message: 'ok', user: req.user });
 });
 
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = req.cookies.token;
 
   if (!token) return res.sendStatus(401);
 
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
 
     req.user = user;
@@ -81,12 +82,19 @@ app.post('/login', async (req, res) => {
            reason = "LOGIN_SUCCESSFUL"
            success = true;
 
-               //JWT erstellen
-     token = jwt.sign(
-      { userId: user.id, username: user.username },
-      JWT_SECRET,
-      { expiresIn: '15s' } // kurz halten!
-    );
+           token = jwt.sign(
+              { userId: userId, username: user.username },
+              process.env.JWT_SECRET,
+              { expiresIn: "15m" }
+            );
+
+           res.cookie("token", token, {
+            httpOnly: true,
+            secure: false, // true bei HTTPS (Production!)
+            sameSite: "lax",
+            maxAge: 15 * 60 * 1000 // 15 Minuten
+          });
+
       }
     }
     //console.log(userId, success, reason);
@@ -97,7 +105,6 @@ app.post('/login', async (req, res) => {
 );
 
     return res.json({success: success
-      ,token: token
     });
 
   } catch (err) {
@@ -106,6 +113,11 @@ app.post('/login', async (req, res) => {
   }
     
 
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("token");
+  res.json({ success: true });
 });
 
 /*
