@@ -14,13 +14,15 @@ char *mqttUser = MQTT_USER;
 char *mqttPassword = MQTT_PASSWORD;
 
 char *subscribeTopic = "foo";
-char *publishTopic = "bar/bar";
+char publishTopic[100];
 
 ESP32MQTTClient mqttClient;
 
 int pubCount = 0;
 
 volatile bool newEspNowMessage = false;
+
+QueueHandle_t espNowQueue;
 
 
 typedef struct sensor_message {
@@ -71,10 +73,8 @@ void onEspNowDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int 
 
   Serial.println("ALARM: Door or window opened!");
 
-
-  
-  
   newEspNowMessage = true;
+  xQueueSend(espNowQueue, &incomingMessage, 0);
     // Hier könntest du später ergänzen:
     // - Sirene aktivieren
     // - HTTP Request ans Backend senden
@@ -126,6 +126,14 @@ void mqttSetup()
     Serial.print("ESP IP: ");
     Serial.println(WiFi.localIP());
 
+
+    uint8_t primaryChannel;
+    wifi_second_chan_t secondChannel;
+
+    esp_wifi_get_channel(&primaryChannel, &secondChannel); 
+    Serial.print("Current WiFi channel: ");
+    Serial.println(primaryChannel);
+
     mqttClient.loopStart();
 }
 
@@ -135,9 +143,9 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
-  
-
   printMacAddress();
+
+  espNowQueue = xQueueCreate(10, sizeof(sensor_message));
 
   if (esp_now_init() != ESP_OK) {
     Serial.println("ESP-NOW init failed");
@@ -151,20 +159,27 @@ void setup() {
   mqttSetup();
 }
 
-uint8_t primaryChannel;
-wifi_second_chan_t secondChannel;
+
 
 void loop() {
-  if(newEspNowMessage)
+  /*if(newEspNowMessage)
   {
-    std::string msg = "Hello: " + std::to_string(pubCount++);
+    snprintf(publishTopic, sizeof(publishTopic), "alarm/%s", incomingMessage.sensorId);
+    std::string msg = "Unit opened: " + std::to_string(incomingMessage.isOpen);
     mqttClient.publish(publishTopic, msg, 0, false);
     newEspNowMessage = false;
-  }
-  esp_wifi_get_channel(&primaryChannel, &secondChannel);
+  }*/
 
-  Serial.print("Current WiFi channel: ");
-  Serial.println(primaryChannel);
+  sensor_message msg;
+if (xQueueReceive(espNowQueue, &msg, 0)) {
+    char topic[100];
+    snprintf(topic, sizeof(topic), "alarm/%s", msg.sensorId);
+
+    std::string payload = msg.isOpen ? "OPEN" : "CLOSED";
+    mqttClient.publish(topic, payload, 0, false);
+}
+ 
+
   delay(1000);
 }
 

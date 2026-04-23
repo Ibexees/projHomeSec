@@ -8,7 +8,10 @@ export default function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const success = await onLogin(username, password);
-    if (!success) setError("Falsche Daten");
+    if (!success) 
+      {setError("Falsche Daten");}
+    else
+    {setError("");}
   };
 
   return (

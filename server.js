@@ -1,3 +1,4 @@
+//import jwt from 'jsonwebtoken';
 const express = require('express');
 const mqtt = require('mqtt');
 const path = require('path');
@@ -7,12 +8,35 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 
-app.use(cors());
+
+
+app.use(cors({
+  origin: 'http://localhost:5173', 
+  credentials: true
+}));
 app.use(express.json());
 
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
+
+app.get('/protected', authenticateToken, (req, res) => {
+  res.json({ message: 'ok', user: req.user });
+});
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.sendStatus(401);
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+
+    req.user = user;
+    next();
+  });
+}
 
 app.get('/i/:status', (req, res) => {
 
@@ -36,21 +60,45 @@ app.post('/login', async (req, res) => {
       try {
     const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     const user = result.rows[0];
-    
+    let reason;
+    let success = false;
+    let userId;
+    let token;
 
     if(!user)
     {
-        return res.json({ success: false });
+        reason = "USER_NOT_FOUND";
     }
+    else
+    {
+      userId = parseInt(user.id);
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        reason = "INVALID_PASSWORD";
+      }
+      else
+      {
+           reason = "LOGIN_SUCCESSFUL"
+           success = true;
 
-    const valid = await bcrypt.compare(password, user.password);
-
-
-    if (!valid) {
-    return res.json({ success: false });
+               //JWT erstellen
+     token = jwt.sign(
+      { userId: user.id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: '15s' } // kurz halten!
+    );
+      }
     }
+    //console.log(userId, success, reason);
+    await pool.query(
+  `INSERT INTO loginlog (userid, success, reason)
+   VALUES ($1, $2, $3)`,
+  [userId, success, reason]
+);
 
-    return res.json({success: true});
+    return res.json({success: success
+      ,token: token
+    });
 
   } catch (err) {
     console.error(err);
@@ -88,7 +136,7 @@ app.post('/register', async (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/users', async (req, res) => {
+/*app.get('/users', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users');
     res.json(result.rows);
@@ -96,7 +144,7 @@ app.get('/users', async (req, res) => {
     console.error(err);
     res.status(500).send('DB Error');
   }
-});
+});*/
 
 
 

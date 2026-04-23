@@ -136,7 +136,7 @@ void espNowSetup()
 }
 
 void sendSensorState(bool isOpen) {
-  strcpy(msg.sensorId, "window_kitchen");
+  strcpy(msg.sensorId, "waschküche");
   msg.isOpen = isOpen;
   msg.battery = 92;
   msg.bootCount = bootCount;
@@ -196,7 +196,7 @@ void loop(){
 
   if(digitalRead(wakePin) == LOW)
   {
-    sendSensorState(true);
+    sendSensorState(false);
     Serial.println("Going to sleep now");
     esp_deep_sleep_start();
   }
