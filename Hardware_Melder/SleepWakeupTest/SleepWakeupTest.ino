@@ -9,6 +9,8 @@
 
 const int led = D10;
 const int wakePin = D1;
+const int adc = A0;
+int batteryLevel = 0;
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int lastWorkingChannel = 3;
 
@@ -138,7 +140,7 @@ void espNowSetup()
 void sendSensorState(bool isOpen) {
   strcpy(msg.sensorId, "waschküche");
   msg.isOpen = isOpen;
-  msg.battery = 92;
+  msg.battery = batteryLevel;
   msg.bootCount = bootCount;
 
   esp_wifi_set_channel(lastWorkingChannel, WIFI_SECOND_CHAN_NONE);
@@ -180,7 +182,7 @@ void sendSensorState(bool isOpen) {
 }
 
 void setup(){
-
+  pinMode(A0, INPUT); 
   sleepmodeSetup();
   espNowSetup();
   
@@ -190,7 +192,16 @@ void setup(){
 uint8_t primaryChannel;
 wifi_second_chan_t secondChannel;
 
-
+  int getBatteryLevel()
+  {
+    uint32_t Vbatt = 0;
+    for(int i = 0; i < 16; i++) {
+    Vbatt = Vbatt + analogReadMilliVolts(A0); // ADC with correction   
+  }
+  float Vbattf = 2 * Vbatt / 16 / 1000.0;     // attenuation ratio 1/2, mV --> V
+  Serial.println(Vbattf, 3);
+  return int(Vbattf);
+  }
 
 void loop(){
 
@@ -205,10 +216,13 @@ void loop(){
 
   Serial.print("Current WiFi channel: ");
   Serial.println(primaryChannel);
+
+  batteryLevel = getBatteryLevel();
   
   //send Data to iot Gateway
   sendSensorState(true);
-  //esp-now connection
+  
+
 
   digitalWrite(led, HIGH);   // turn the LED on 
   delay(10000);               // wait for a second

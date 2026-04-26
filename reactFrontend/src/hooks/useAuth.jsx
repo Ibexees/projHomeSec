@@ -1,16 +1,35 @@
 import { useState } from "react";
+import { useEffect } from "react";
 
 export default function useAuth() {
   const [user, setUser] = useState(null);
 
+   useEffect(() => {
+    fetch("/api/protected", {
+      credentials: "include",
+    })
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => {
+        setUser(data.user || true); // je nach backend
+      })
+      .catch(() => {
+        setUser(null);
+      });
+  }, []);
+
+
   const login = async (username, password) => {
 
-  const res = await fetch("http://localhost:3000/login", {
+  const res = await fetch("/api/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      credentials: "include",
+      
     },
+    credentials: "include",
     body: JSON.stringify({ username, password }),
   });
 
@@ -34,7 +53,13 @@ export default function useAuth() {
 
   };
 
-  const logout = () => setUser(null);
+    const logout = async () => {
+    await fetch("/api/logout", {
+      credentials: "include",
+    });
+
+    setUser(null);
+  };
 
   return { user, login, logout };
 }

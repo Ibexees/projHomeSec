@@ -87,12 +87,13 @@ app.post('/login', async (req, res) => {
               process.env.JWT_SECRET,
               { expiresIn: "15m" }
             );
-
+           
            res.cookie("token", token, {
             httpOnly: true,
             secure: false, // true bei HTTPS (Production!)
             sameSite: "lax",
-            maxAge: 15 * 60 * 1000 // 15 Minuten
+            maxAge: 15 * 60 * 1000, // 15 Minuten
+            path: "/"
           });
 
       }

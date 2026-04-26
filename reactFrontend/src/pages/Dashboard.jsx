@@ -1,15 +1,15 @@
 export default function Dashboard() {
 
   const turnOn = async () => {
-    await fetch("http://localhost:3000/i/on");
+    await fetch("/api/i/on");
   };
 
   const turnOff = async () => {
-    await fetch("http://localhost:3000/i/off");
+    await fetch("/api/i/off");
   };
 
     const testprotected = async () => {
-    await fetch("http://localhost:3000/protected", {
+    await fetch("/api/protected", {
   method: "GET",
   credentials: "include"
 });
