@@ -200,8 +200,21 @@ wifi_second_chan_t secondChannel;
   }
   float Vbattf = 2 * Vbatt / 16 / 1000.0;     // attenuation ratio 1/2, mV --> V
   Serial.println(Vbattf, 3);
-  return int(Vbattf);
+  float batteryPercent = voltageToPercent(Vbattf);
+  Serial.println(batteryPercent,3);
+  return int(batteryPercent);
   }
+
+
+  //y(x)=y1+((y2−y1)/(x2−x1))⋅(x−x1)
+  float voltageToPercent(float v) {
+  if (v >= 4.2) return 100;
+  if (v >= 4.0) return 80 + (v - 4.0) * (100 - 80) / (4.2 - 4.0);
+  if (v >= 3.8) return 50 + (v - 3.8) * (80 - 50) / (4.0 - 3.8);
+  if (v >= 3.6) return 20 + (v - 3.6) * (50 - 20) / (3.8 - 3.6);
+  if (v >= 3.3) return (v - 3.3) * (20) / (3.6 - 3.3);
+  return 0;
+}
 
 void loop(){
 

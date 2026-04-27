@@ -9,6 +9,8 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
+const format = require('node-pg-format').format;
+
 
 app.use(cookieParser());
 
@@ -46,11 +48,11 @@ app.get('/i/:status', (req, res) => {
 
     if(status === "on")
     {
-        mqttCon.publish("Melder/1/cmnd/POWER", "ON");
+        mqttCon.publish("cmnd/Melder/POWER", "ON");
     }
     else
     {
-        mqttCon .publish("Melder/1/cmnd/POWER", "OFF");
+        mqttCon .publish("cmnd/Melder/POWER", "OFF");
     }
     res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 })
@@ -159,7 +161,25 @@ app.post('/register', async (req, res) => {
   }
 });*/
 
+app.post('/unitUpdate', async (req, res) => {
+    let batch = req.body;
+    //console.log(batch);
+    res.sendStatus(200);
 
+    const rows = batch.map(({ topic, message, ts }) => {
+    const [state, batteryStr] = message.split("|");
+    return [topic, state, parseInt(batteryStr, 10), new Date(ts)];
+    });
+
+    const query = format(
+    "INSERT INTO sensorlog (topic, state, battery, ts) VALUES %L",
+    rows
+    );
+
+await pool.query(query);
+
+
+});
 
 const mqttCon = mqtt.connect(
                                 process.env.mqttbrokerIP,
@@ -171,12 +191,65 @@ const mqttCon = mqtt.connect(
 
 
 mqttCon .on("connect", () => {
+    mqttCon.subscribe("alarm/waschküche");
     console.log("Connected to MQTT broker");
 });
 
 mqttCon .on("error", (err) => {
     console.error("MQTT error:", err);
 });
+
+const queue = [];
+
+const BATCH_SIZE = 10;     // max. Einträge pro Request
+const INTERVAL_MS = 500;   // wie oft senden
+
+
+mqttCon.on("message", (topic, message) => {
+  // message is Buffer
+  //console.log("topic: " + topic.toString() + " message: " + message.toString());
+    
+    queue.push({
+    topic: topic.toString(),
+    message: message.toString(),
+    ts: Date.now()
+  });
+
+  if (queue.length >= BATCH_SIZE) {
+    processQueue(); // sofort triggern
+  }
+
+});
+
+async function processQueue() {
+  if (queue.length === 0) return;
+
+  // Batch erstellen
+  const batch = queue.splice(0, BATCH_SIZE);
+
+  try {
+    const res = await fetch("http://localhost:3000/unitUpdate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(batch),
+    });
+
+    if (!res.ok) {
+      throw new Error("HTTP error " + res.status);
+    }
+
+  } catch (err) {
+    console.error("Batch failed, retrying...", err);
+
+    // zurück in Queue (vorne!)
+    queue.unshift(...batch);
+  }
+}
+
+// regelmäßig ausführen
+setInterval(processQueue, INTERVAL_MS);
 
 const pool = new Pool({
   host: process.env.DB_HOST,

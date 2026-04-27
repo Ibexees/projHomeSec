@@ -176,6 +176,7 @@ if (xQueueReceive(espNowQueue, &msg, 0)) {
     snprintf(topic, sizeof(topic), "alarm/%s", msg.sensorId);
 
     std::string payload = msg.isOpen ? "OPEN" : "CLOSED";
+    payload = payload + "|" +  std::to_string(msg.battery);
     mqttClient.publish(topic, payload, 0, false);
 }
  
