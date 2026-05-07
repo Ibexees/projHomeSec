@@ -1,0 +1,120 @@
+.container {
+  padding: 30px;
+}
+
+.grid {
+  display: flex;
+  gap: 20px;
+}
+
+/* CARD */
+
+.sensor-card {
+  width: 260px;
+  background: white;
+  border: 2px solid #2ecc71;
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.sensor-card:hover {
+  transform: translateY(-4px);
+}
+
+.sensor-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.location {
+  color: #777;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.badge.online {
+  color: #2ecc71;
+}
+
+.badge.offline {
+  color: red;
+}
+
+.armed-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  background: #0b5d2a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+/* MODAL */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  width: 500px;
+  margin: 80px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.status-row {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.status-box {
+  flex: 1;
+  background: #f1f3f6;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.bar {
+  height: 8px;
+  background: #ddd;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.fill.green {
+  background: #2ecc71;
+  height: 100%;
+}
+
+.fill.blue {
+  background: #3498db;
+  height: 100%;
+}
+
+.disarm-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3b4a5a;
+  color: white;
+  border-radius: 10px;
+  border: none;
+}

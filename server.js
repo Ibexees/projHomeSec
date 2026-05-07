@@ -28,6 +28,44 @@ app.get('/protected', authenticateToken,  (req, res) => {
   res.json({ message: 'ok', user: req.user });
 });
 
+function formatDate(date) {
+  const d = new Date(date);
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  const seconds = String(d.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+app.get('/currentSensorstatus', authenticateToken, async (req, res) => {
+
+    //TODO: retrieve Sensordata form sql server
+     const result = await pool.query('select * from latestsensordata l');
+  
+
+    const sensors = result.rows.map((row, index) => ({
+  id: index + 1,
+  name: row.topic.split("/")[1] + " Sensor",
+  location: row.topic.split("/")[1],
+  online: true,
+  armed: row.state === "CLOSED",
+  state: row.state,
+  battery: row.battery,
+  signal: 95,
+  lastActive: formatDate(row.ts),
+  firmware: "v2.3.1"
+}));
+
+  console.log(sensors);
+
+  res.json({ message: 'ok', sensors: sensors });
+});
+
 function authenticateToken(req, res, next) {
   const token = req.cookies.token;
 
@@ -192,6 +230,8 @@ const mqttCon = mqtt.connect(
 
 mqttCon .on("connect", () => {
     mqttCon.subscribe("alarm/waschküche");
+    mqttCon.subscribe("alarm/wohnzimmer");
+    mqttCon.subscribe("alarm/Schlafzimmer");
     console.log("Connected to MQTT broker");
 });
 
@@ -204,7 +244,7 @@ const queue = [];
 const BATCH_SIZE = 10;     // max. Einträge pro Request
 const INTERVAL_MS = 500;   // wie oft senden
 
-
+//Bei Mqtt message recieve in die Queue Speichern
 mqttCon.on("message", (topic, message) => {
   // message is Buffer
   //console.log("topic: " + topic.toString() + " message: " + message.toString());
@@ -221,9 +261,10 @@ mqttCon.on("message", (topic, message) => {
 
 });
 
+//Queue von Tür und Fenstermelder Daten abbarbeiten
 async function processQueue() {
   if (queue.length === 0) return;
-
+ 
   // Batch erstellen
   const batch = queue.splice(0, BATCH_SIZE);
 

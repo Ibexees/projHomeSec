@@ -138,7 +138,7 @@ void espNowSetup()
 }
 
 void sendSensorState(bool isOpen) {
-  strcpy(msg.sensorId, "waschküche");
+  strcpy(msg.sensorId, "Schlafzimmer");
   msg.isOpen = isOpen;
   msg.battery = batteryLevel;
   msg.bootCount = bootCount;

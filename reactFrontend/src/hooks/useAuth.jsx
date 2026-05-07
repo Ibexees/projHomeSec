@@ -44,9 +44,6 @@ export default function useAuth() {
       return true;
     }
   }
-
-
-
   console.log("Login failed", data);
   setUser(null);
   return false;
