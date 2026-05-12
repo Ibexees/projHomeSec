@@ -36,6 +36,10 @@ join sensorlog
 	on base.ts = sensorlog.ts 
 	and base.topic = sensorlog.topic)
 
-
+CREATE TABLE alarm_state (
+    id int primary key,
+    armed boolean not null,
+    updated_at timestamptz default now()
+);
 
 

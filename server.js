@@ -61,7 +61,7 @@ app.get('/currentSensorstatus', authenticateToken, async (req, res) => {
   firmware: "v2.3.1"
 }));
 
-  console.log(sensors);
+  //console.log(sensors);
 
   res.json({ message: 'ok', sensors: sensors });
 });
@@ -216,6 +216,41 @@ app.post('/unitUpdate', async (req, res) => {
 
 await pool.query(query);
 
+
+});
+
+app.post('/setArmedState', authenticateToken, async (req,res) => {
+  const armstate = req.body.newState;
+
+  console.log(armstate);
+
+  try{
+    const query = `UPDATE alarm_state SET armed = ${armstate}, updated_at = now() WHERE id = 1`
+    await pool.query(query);
+    res.sendStatus(200);
+  }
+  catch
+  {
+
+    res.sendStatus(500)
+  }
+
+});
+
+app.get('/getArmedState',  authenticateToken, async (req, res)=> {
+
+     try{
+    const query = `Select * from alarm_state where id = 1`
+    const result = await pool.query(query);
+    
+
+    res.json(result.rows);
+  }
+  catch
+  {
+
+    res.statusStatus(500)
+  }
 
 });
 

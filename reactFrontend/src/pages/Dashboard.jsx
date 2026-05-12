@@ -9,6 +9,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     getSensordata();
+
+    }, []);
+
+      useEffect(() => {
+    getArmedState();
     }, []);
 
   const turnOn = async () => {
@@ -28,6 +33,7 @@ export default function Dashboard() {
 
     const [selectedSensor, setSelectedSensor] = useState(null);
     const [sensors, setSensors] = useState([]);
+    
   
     const getSensordata = async () => {
     const res = await fetch("/api/currentSensorstatus", {
@@ -51,9 +57,52 @@ export default function Dashboard() {
   console.log("Failed loading sensordata");
 
 }
+  const getArmedState = async () => {
+    const res = await fetch("/api/getArmedState", {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include"
 
+    });
 
+    const data = await res.json();
+    console.log(data);
+
+    
+  if (res.ok) {
+
+      console.log("Succsessfully loaded armedState: ",data[0].armed);
+      setArmstate(data[0].armed);
+      return;
+  }
+
+  console.log("Failed loading armedState");
+  }
+
+  const [armstate, setArmstate] = useState(null);
+  const toggleArmState = async () => {
+  const newState = !armstate;
   
+  setArmstate(newState);
+  
+  try{
+        const res = await fetch("/api/setArmedState", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+    body: JSON.stringify({newState})
+  });
+
+  }
+  catch{
+      console.log("Failed setting armedstate");
+  }
+
+};
 
   /*const sensors = [
     {
@@ -89,6 +138,15 @@ export default function Dashboard() {
       <button onClick={turnOn}>Einschalten</button>
       <button onClick={turnOff}>Ausschalten</button>
       <button onClick={testprotected}>protected</button>
+      
+
+
+<button
+  onClick={toggleArmState}
+  className={armstate ? "armed-btn" : "disarmed-btn"}
+>
+  {armstate ? "🛡 System Armed" : "🔓 System Disarmed"}
+</button>
     
   
 

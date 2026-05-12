@@ -13,7 +13,7 @@ function App() {
   
   const auth = useAuth();
   return (
- <BrowserRouter>
+  <BrowserRouter>
       <nav>
         <Link to="/">Home</Link> |{" "}
         <Link to="/dashboard">Dashboard</Link> |{" "}
