@@ -1,0 +1,63 @@
+.analytics-page {
+  padding: 32px;
+  background: #0f172a;
+  min-height: 100vh;
+  color: white;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.analytics-header h1 {
+  font-size: 32px;
+}
+
+.range-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.range-buttons button {
+  background: #1e293b;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.range-buttons button:hover {
+  background: #334155;
+}
+
+.range-buttons .active {
+  background: #2563eb;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 24px;
+}
+
+.analytics-card {
+  background: #1e293b;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.analytics-card h2 {
+  margin-bottom: 20px;
+}
+
+.analytics-loading {
+  color: white;
+  padding: 40px;
+  font-size: 24px;
+}

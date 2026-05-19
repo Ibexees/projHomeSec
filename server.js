@@ -225,7 +225,7 @@ app.post('/setArmedState', authenticateToken, async (req,res) => {
   console.log(armstate);
 
   try{
-    const query = `UPDATE alarm_state SET armed = ${armstate}, updated_at = now() WHERE id = 1`
+    const query = `insert into alarm_state (armed, updated_at) values( ${armstate},now())` //`UPDATE alarm_state SET armed = ${armstate}, updated_at = now() WHERE id = 1`
     await pool.query(query);
     res.sendStatus(200);
   }
@@ -240,7 +240,7 @@ app.post('/setArmedState', authenticateToken, async (req,res) => {
 app.get('/getArmedState',  authenticateToken, async (req, res)=> {
 
      try{
-    const query = `Select * from alarm_state where id = 1`
+    const query = `select * from latest_alarm_state`//`Select * from alarm_state where id = 1`
     const result = await pool.query(query);
     
 
@@ -249,10 +249,91 @@ app.get('/getArmedState',  authenticateToken, async (req, res)=> {
   catch
   {
 
-    res.statusStatus(500)
+    res.sendStatus(500)
   }
 
 });
+
+app.get('/openingCount', authenticateToken, async (req, res) =>{
+
+  const range= req.query.range;
+  const time_frame = parseTimeframe(range);
+
+  
+
+
+
+  let query = `with collect_statechange as(
+
+select id,topic,state,battery,ts,lag(state) over (partition by topic order by ts asc) prevState
+from sensorlog s
+--where ts > now() - interval ${time_frame} 
+)
+
+select split_part(topic, '/', 2) topic,count(state) 
+from collect_statechange 
+where prevState != state and state = 'OPEN'
+group by topic`
+
+  try {
+
+    const result = await pool.query(query);
+
+    
+    res.json(result.rows);
+
+  } catch (err) {
+
+    console.error(err);
+  }
+
+
+});
+
+function parseTimeframe(timeText)
+{
+  switch(timeText)
+  {
+    case "week": return("'7 days'"); break;
+    case "month": return("'1 month'"); break;
+    case "year": return("'1 year'"); break;
+    case "day": return("'1 days'"); break;
+
+  }
+
+
+}
+
+async function checkAlarm ()
+{
+ 
+  try {
+
+    const result = await pool.query(`
+      select * 
+      from latestsensordata 
+      full join latest_alarm_state on true
+      where state = 'OPEN' and armed = true
+    `);
+
+    const triggered = result.rows.length > 0;
+
+    if(triggered)
+    {
+        console.log("Siren on");
+        mqttCon.publish("alarm/siren", "ON");
+    }
+    else
+    {
+        console.log("Siren off");
+        mqttCon.publish("alarm/siren", "OFF");
+    }
+
+  } catch (err) {
+
+    console.error(err);
+  }
+}
 
 const mqttCon = mqtt.connect(
                                 process.env.mqttbrokerIP,
@@ -315,6 +396,8 @@ async function processQueue() {
     if (!res.ok) {
       throw new Error("HTTP error " + res.status);
     }
+
+     await checkAlarm();
 
   } catch (err) {
     console.error("Batch failed, retrying...", err);

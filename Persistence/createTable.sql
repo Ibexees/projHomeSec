@@ -42,4 +42,17 @@ CREATE TABLE alarm_state (
     updated_at timestamptz default now()
 );
 
+CREATE INDEX idx_alarm_state_updated_at
+ON alarm_state(updated_at DESC);
+
+create view latest_alarm_state as(
+SELECT id, armed, updated_at
+FROM alarm_state
+ORDER BY updated_at DESC, id DESC
+LIMIT 1);
+
+ALTER TABLE public.alarm_state
+ALTER COLUMN id
+ADD GENERATED ALWAYS AS IDENTITY;
+
 

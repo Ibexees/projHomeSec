@@ -14,6 +14,7 @@ char *mqttUser = MQTT_USER;
 char *mqttPassword = MQTT_PASSWORD;
 
 char *subscribeTopic = "foo";
+char *sirenTopic = "alarm/siren";
 char publishTopic[100];
 
 ESP32MQTTClient mqttClient;
@@ -23,6 +24,8 @@ int pubCount = 0;
 volatile bool newEspNowMessage = false;
 
 QueueHandle_t espNowQueue;
+
+const int sirenPin = D10;
 
 
 typedef struct sensor_message {
@@ -138,6 +141,7 @@ void mqttSetup()
 }
 
 void setup() {
+  pinMode(sirenPin, OUTPUT);
   Serial.begin(115200);
   delay(1000);
 
@@ -191,6 +195,20 @@ void onMqttConnect(esp_mqtt_client_handle_t client)
         mqttClient.subscribe(subscribeTopic, [](const std::string &payload)
                              { log_i("%s: %s", subscribeTopic, payload.c_str()); });
 
+        mqttClient.subscribe(sirenTopic, [](const std::string &payload)
+                             { 
+                                log_i("%s: %s", sirenTopic, payload.c_str()); 
+                                if (payload == "ON")
+                                {
+                                    digitalWrite(sirenPin, HIGH);
+                                }
+                                else if (payload == "OFF")
+                                {
+                                    digitalWrite(sirenPin, LOW);
+                                }
+                             
+                             });                           
+                        
         mqttClient.subscribe("bar/#", [](const std::string &topic, const std::string &payload)
                              { log_i("%s: %s", topic.c_str(), payload.c_str()); });
     }
