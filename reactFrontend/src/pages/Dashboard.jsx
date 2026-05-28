@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useEffect } from "react";
-import SensorCard from "../components/SensorCard";
-import SensorModal from "../components/SensorModal";
+import SensorCard from "../components/sensorCard";
+import SensorModal from "../components/sensorModal";
 import "../components/style.css";
 
 
