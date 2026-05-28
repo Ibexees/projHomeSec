@@ -21,9 +21,7 @@ export default function SensorCard({ sensor, onClick }) {
         <span>🔋 {sensor.battery}%</span>
       </div>
 
-      <button className="armed-btn">
-        {sensor.armed ? "🛡 Armed" : "Disarmed"}
-      </button>
+     
     </div>
   );
 }

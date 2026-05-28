@@ -36,7 +36,7 @@ export default function Analytics() {
 
       setLoading(true);
 
-      // 🔥 Öffnungsstatistik
+      //  Öffnungsstatistik
       const openingsRes = await fetch(
         `/api/openingCount?range=${range}`,
         {
@@ -46,9 +46,9 @@ export default function Analytics() {
 
       const openings = await openingsRes.json();
 
-      // 🔥 Batterieverlauf
+      //  Batterieverlauf
       const batteryRes = await fetch(
-        `/api/openingCount?range=${range}`,
+        `/api/batterytrend?range=${range}`,
         {
           credentials: "include"
         }
@@ -56,9 +56,9 @@ export default function Analytics() {
 
       const battery = await batteryRes.json();
 
-      // 🔥 Statusübersicht
+      //  Statusübersicht
       const statusRes = await fetch(
-        `/api/openingCount?range=${range}`,
+        `/api/loginCount?range=${range}`,
         {
           credentials: "include"
         }
@@ -135,7 +135,7 @@ export default function Analytics() {
 
       <div className="analytics-grid">
 
-        {/* 🔥 OPENINGS */}
+        {/* OPENINGS */}
 
         <div className="analytics-card">
 
@@ -153,7 +153,9 @@ export default function Analytics() {
 
               <Tooltip />
 
-              <Bar dataKey="count" />
+              <Bar dataKey="count" 
+                   fill="#22c55e"
+              />
 
             </BarChart>
 
@@ -161,7 +163,7 @@ export default function Analytics() {
 
         </div>
 
-        {/* 🔥 BATTERY */}
+        {/* BATTERY */}
 
         <div className="analytics-card">
 
@@ -181,7 +183,14 @@ export default function Analytics() {
 
               <Line
                 type="monotone"
-                dataKey="battery"
+                //dataKey="battery"
+                dataKey="waschküche"
+              />
+
+               <Line
+                type="monotone"
+                //dataKey="battery"
+                dataKey="Schlafzimmer"
               />
 
             </LineChart>
@@ -190,33 +199,37 @@ export default function Analytics() {
 
         </div>
 
-        {/* 🔥 STATUS */}
+        {/* Login History */}
 
         <div className="analytics-card">
 
-          <h2>Sensor Status</h2>
+          <h2>Login History</h2>
 
           <ResponsiveContainer width="100%" height={300}>
 
-            <PieChart>
+            <LineChart data={statusData}>
 
-              <Pie
-                data={statusData}
-                dataKey="value"
-                nameKey="name"
-                outerRadius={100}
-                label
-              >
-                {statusData.map((entry, index) => (
-                  <Cell key={index} />
-                ))}
-              </Pie>
+              <CartesianGrid strokeDasharray="3 3" />
+
+              <XAxis dataKey="time" />
+
+              <YAxis />
 
               <Tooltip />
 
-              <Legend />
+              <Line
+                type="monotone"
+                //dataKey="battery"
+                dataKey="gillian"
+              />
 
-            </PieChart>
+               <Line
+                type="monotone"
+                //dataKey="battery"
+                dataKey="mar"
+              />
+
+            </LineChart>
 
           </ResponsiveContainer>
 

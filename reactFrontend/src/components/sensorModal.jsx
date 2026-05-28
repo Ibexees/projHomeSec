@@ -17,15 +17,10 @@ export default function SensorModal({ sensor, onClose }) {
             <p>Status</p>
             <h3 className="green">
               {sensor.state}
-            </h3>,
-          </div>
-
-          <div className="status-box">
-            <p>Armed Status</p>
-            <h3 className="green">
-              {sensor.armed ? "Armed" : "Disarmed"}
             </h3>
           </div>
+
+        
         </div>
 
         <div className="info">
@@ -52,9 +47,7 @@ export default function SensorModal({ sensor, onClose }) {
           <p><strong>ID:</strong> {sensor.id}</p>
         </div>
 
-        <button className="disarm-btn">
-          {sensor.armed ? "Disarm Device" : "Arm Device"}
-        </button>
+        
 
       </div>
     </div>

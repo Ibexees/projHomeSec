@@ -42,7 +42,7 @@ function formatDate(date) {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
-app.get('/currentSensorstatus', authenticateToken, async (req, res) => {
+app.get('/currentSensorstatus', /*authenticateToken,*/ async (req, res) => {
 
     //TODO: retrieve Sensordata form sql server
      const result = await pool.query('select * from latestsensordata l');
@@ -237,7 +237,7 @@ app.post('/setArmedState', authenticateToken, async (req,res) => {
 
 });
 
-app.get('/getArmedState',  authenticateToken, async (req, res)=> {
+app.get('/getArmedState',  /*authenticateToken, */ async (req, res)=> {
 
      try{
     const query = `select * from latest_alarm_state`//`Select * from alarm_state where id = 1`
@@ -254,6 +254,100 @@ app.get('/getArmedState',  authenticateToken, async (req, res)=> {
 
 });
 
+app.get('/batterytrend', authenticateToken, async (req, res)=>{
+
+    const range = req.query.range;
+    const time_interval = parseTimeframe(range);
+
+
+
+  const time_frame = date_trunc_format(range);
+
+
+  
+  
+  let query = `SELECT DISTINCT ON (
+    topic,
+    date_trunc(${time_frame}, ts)
+)
+    topic,
+    battery,
+    date_trunc(${time_frame}, ts) as time
+FROM sensorlog
+WHERE
+    ts > now() - interval ${time_interval}
+    AND battery <> 0
+ORDER BY
+    topic,
+    date_trunc(${time_frame}, ts),
+    ts DESC;`
+
+  try {
+
+    const result = await pool.query(query);
+
+    
+    res.json(formatForRecharts(result.rows));
+
+  } catch (err) {
+
+    console.error(err);
+  }
+
+});
+
+function formatForRecharts(rows) {
+  const grouped = {};
+
+  for (const row of rows) {
+    const topicRaw = row.topic; // "alarm/Schlafzimmer"
+    const value = row.battery;
+    const timestamp = row.time;
+
+    // 1. Topic bereinigen
+    const topic = topicRaw.split("/").pop(); // "Schlafzimmer"
+
+    // 2. Datum normalisieren (YYYY-MM-DD)
+    const time = new Date(timestamp).toISOString().slice(0, 10);
+
+    // 3. Gruppieren nach time
+    if (!grouped[time]) {
+      grouped[time] = { time };
+    }
+
+    grouped[time][topic] = value;
+  }
+
+  return Object.values(grouped)
+    .sort((a, b) => new Date(a.time) - new Date(b.time));
+}
+
+function formatLoginDataForRecharts(rows) {
+  const grouped = {};
+
+  for (const row of rows) {
+    const usernameRaw = row.username; // "alarm/Schlafzimmer"
+    const value = row.count;
+    const timestamp = row.time;
+
+    // 1. Topic bereinigen
+    const topic = usernameRaw.split("/").pop(); // "Schlafzimmer"
+
+    // 2. Datum normalisieren (YYYY-MM-DD)
+    const time = new Date(timestamp).toISOString().slice(0, 10);
+
+    // 3. Gruppieren nach time
+    if (!grouped[time]) {
+      grouped[time] = { time };
+    }
+
+    grouped[time][topic] = value;
+  }
+
+  return Object.values(grouped)
+    .sort((a, b) => new Date(a.time) - new Date(b.time));
+}
+
 app.get('/openingCount', authenticateToken, async (req, res) =>{
 
   const range= req.query.range;
@@ -267,12 +361,12 @@ app.get('/openingCount', authenticateToken, async (req, res) =>{
 
 select id,topic,state,battery,ts,lag(state) over (partition by topic order by ts asc) prevState
 from sensorlog s
---where ts > now() - interval ${time_frame} 
+where ts > now() - interval ${time_frame} 
 )
 
 select split_part(topic, '/', 2) topic,count(state) 
 from collect_statechange 
-where prevState != state and state = 'OPEN'
+where coalesce(prevState, 'NO PREV') != state and state = 'OPEN'
 group by topic`
 
   try {
@@ -289,6 +383,46 @@ group by topic`
 
 
 });
+
+app.get('/loginCount', /*authenticateToken*/ async (req, res) =>{
+
+  const range= req.query.range;
+  const time_interval = parseTimeframe(range);
+  const time_frame = date_trunc_format(range);
+  
+
+
+
+  let query =    `select distinct on (username, date_trunc(${time_frame}, eventtime)) 
+                  username,date_trunc(${time_frame}, eventtime) time, count(*) 
+                  from loginlog join users on id = userid 
+                  where loginlog.eventtime > now() - interval ${time_interval}
+                  group by username, date_trunc(${time_frame},eventtime);`
+
+  try {
+    const result = await pool.query(query);
+    res.json(formatLoginDataForRecharts(result.rows));
+
+  } catch (err) {
+    console.error(err);
+  }
+
+
+});
+
+
+    function date_trunc_format(range) 
+    {
+ 
+    switch(range)
+    {
+      case "week": return("'day'"); 
+      case "month": return("'day'"); 
+      case "year": return("'week'"); 
+      case "day": return("'hour'"); 
+    }
+
+  }
 
 function parseTimeframe(timeText)
 {
