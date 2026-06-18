@@ -8,6 +8,41 @@
 
 const char *ssid = WIFI_SSID;
 const char *pass = WIFI_PASSWORD;
+const char *caCert = CERTIFICATE;
+static const char ROOT_CA[] = R"EOF(
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIULShf2pHhwHQUSZ8UUYlOAOFmXqkwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0yNjA2MTcwOTExMDFaFw0zNjA2
+MTQwOTExMDFaMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEw
+HwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwggIiMA0GCSqGSIb3DQEB
+AQUAA4ICDwAwggIKAoICAQDH5hcYG7moavHEcbNP5oJxsh66Y8Lc06rEAjXjip+O
+kjqzwSSaN94wL0N8wMPpPDdlkEbZBpzYzS0EugUBiHxbSY40Jsa5EaPLrq5UHP5Z
+eDOTzEsCWN8AvsNq9eoX/KcT4+HtJP6/B2c89im7KgNUBNWf65dSMt1nENFhikpZ
+dmRv7cViqVOkgtjENT01oxbY31L+WzzGfQpE4MihAis4ZjFvgQzsJyCK6Sd3Idrw
+bQWI7wvqmHSLfyKuzo1DDjlR4vEyejm8SEWl3cdMKVMk0sSjgqJqUtG8FW56lDPu
+uPnjhL9IpTS/NYkJSLUY6ZGSqHMA/iyB31r9+7YZfgP+IKrye6+K6h22y050MtQs
+gvdcEW0ZKZS7psuR4io8074PZx1UD+9EgG1Qz004tDGAcTpqxCP87jh7y/I6SQdx
+tRJkVTQwHB1UALY1vSvctGHFhthSXNDkmdcTyGRua/2CYDxwfvDDMfLyp1MaGsEF
+u0D/1/f5ddKJvI6Bjox4fVHuvBwn1suAZKhO/0rNnTlFd9bxLFgTDxor3FD3+upz
+I0f4NZ9OPPq2ab7MgNZgRnEumRWTj8xOoRx39+PlJ2dJV8+wyMAoebFVcmwo485L
+bs5VCNaJjhuXnK49R1RlCv4zdTjB38nIAkGMWM/8quhi+yHbZSTgJH8jZ9/SxKqf
+3wIDAQABo1MwUTAdBgNVHQ4EFgQUzeSgxwmxH054JnuhvRTBa0GDV24wHwYDVR0j
+BBgwFoAUzeSgxwmxH054JnuhvRTBa0GDV24wDwYDVR0TAQH/BAUwAwEB/zANBgkq
+hkiG9w0BAQsFAAOCAgEAHLKUFCqKgXG6AEbyOOqhhfLu2+lwmT8cuLGvA7F9faYx
+kFaOS3DYorcCuDxkYBFPLfhXETFOaYbnYtb1d8+Sg9cl8bpzIk5GZ9ceDnH9vV8V
+8WQ1Eh5V0pAZRxndip4ququqap1Jz8wjfjvz06iALiXr0YEPbAGhaFbJOPGeLWrw
+BvdGfKMb+HytINLf9yLsrtskSN+2BB8U/AzhvFB++J/bKsnb8yG7UEvIA8tA/fFW
+HZxVJGnIO5zoC/44ypcIoA8u8djzBiwXDGJ7WOQnmRT2vNCA1pfxOLLbsRsuVdyd
+ala8wfNpK3Cz1Q31ORHcbPkh2PA6rqpjnZtmPBDBIqP4LMIs9jKC19djtKIQSkNk
+2X/ztrpRVdQW+fEezLSMVpTm9gXXLXqVGGpZuQ1WBlacp9ZPhBnVeYNOX4MPOEm7
+w3Ki0vxYl30xQ/43HYWcMTBnCdnDe2+9WuuWUTgOveFvaVDZudWkBJBZH/GLzHH1
+HvnC5NAp0UdhsafXpu/on4kiJfTr+AZ26guf1W9ToGXWnJ+mTShbT7PWzjHq7RYs
+DVPlmhLPwwYSA8qoyjmGwKrWpk3IMkuB5dCEF3KKnVq8FgQhOjdjLEZkK4Z3ULCf
+2PP/WZliIivOL01ZcKTRdIsOOYT3+R1pyk+I9ks5CGKIPKGENi2qykdumPu+e1M=
+-----END CERTIFICATE-----
+)EOF";
+
 
 char *mqttServer = MQTT_BROKER_ADRESS ;
 char *mqttUser = MQTT_USER;
@@ -108,6 +143,7 @@ void mqttSetup()
     mqttClient.enableDebuggingMessages();
 
     mqttClient.setURI(mqttServer, mqttUser, mqttPassword);
+    mqttClient.setCaCert(ROOT_CA);  // Enable TLS verification
     mqttClient.enableLastWillMessage("lwt", "I am going offline");
     mqttClient.setKeepAlive(30);
     mqttClient.setOnMessageCallback([](const std::string &topic, const std::string &payload) {

@@ -86,8 +86,10 @@ export default function Dashboard() {
   const newState = !armstate;
   
   setArmstate(newState);
+  console.log(newState);
   
   try{
+
         const res = await fetch("https://192.168.178.34:3000/setArmedState", {
     method: "POST",
     headers: {

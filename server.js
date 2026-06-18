@@ -214,7 +214,7 @@ app.post('/register', async (req, res) => {
 
 
 
-app.post('/setArmedState', authenticateToken, async (req,res) => {
+app.post('/setArmedState', /*authenticateToken*/ async (req,res) => {
   const armstate = req.body.newState;
 
   console.log(armstate);
@@ -249,7 +249,7 @@ app.get('/getArmedState',  /*authenticateToken, */ async (req, res)=> {
 
 });
 
-app.get('/batterytrend', authenticateToken, async (req, res)=>{
+app.get('/batterytrend', /*authenticateToken,*/ async (req, res)=>{
 
     const range = req.query.range;
     const time_interval = parseTimeframe(range);
@@ -464,14 +464,25 @@ async function checkAlarm ()
   }
 }
 
-const mqttCon = mqtt.connect(
+/*const mqttCon = mqtt.connect(
                                 process.env.mqttbrokerIP,
                                 {
                                     username: process.env.mqttusername,
                                     password: process.env.mqttpassword
                                 }
-                            );
+                            );*/
 
+const mqttCon = mqtt.connect(
+  process.env.mqttbrokerIP,
+  {
+    username: process.env.mqttusername,
+    password: process.env.mqttpassword,
+
+    ca: fs.readFileSync("./ca.crt"),
+
+    rejectUnauthorized: true
+  }
+);
 
 mqttCon .on("connect", () => {
     mqttCon.subscribe("alarm/waschküche");
