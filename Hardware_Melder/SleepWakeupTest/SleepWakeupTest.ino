@@ -205,7 +205,6 @@ wifi_second_chan_t secondChannel;
   return int(batteryPercent);
   }
 
-
   //y(x)=y1+((y2−y1)/(x2−x1))⋅(x−x1)
   float voltageToPercent(float v) {
   if (v >= 4.2) return 100;
@@ -231,7 +230,6 @@ void loop(){
   Serial.println(primaryChannel);
 
   batteryLevel = getBatteryLevel();
-  
   //send Data to iot Gateway
   sendSensorState(true);
   

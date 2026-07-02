@@ -16,16 +16,25 @@ export default function Dashboard() {
     getArmedState();
     }, []);
 
+    useEffect(() => {    
+    const interval = setInterval(() => {
+      getSensordata();
+    }, 15000);
+
+    return () => clearInterval(interval);
+
+  }, []);
+
   const turnOn = async () => {
-    await fetch("/api/i/on");
+    await fetch("https://192.168.178.34:3000/i/on");
   };
 
   const turnOff = async () => {
-    await fetch("/api/i/off");
+    await fetch("https://192.168.178.34:3000/i/off");
   };
 
     const testprotected = async () => {
-    await fetch("/api/protected", {
+    await fetch("https://192.168.178.34:3000/protected", {
   method: "GET",
   credentials: "include"
 });
@@ -36,7 +45,7 @@ export default function Dashboard() {
     
   
     const getSensordata = async () => {
-    const res = await fetch("/api/currentSensorstatus", {
+    const res = await fetch("https://192.168.178.34:3000/currentSensorstatus", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -58,7 +67,7 @@ export default function Dashboard() {
 
 }
   const getArmedState = async () => {
-    const res = await fetch("/api/getArmedState", {
+    const res = await fetch("https://192.168.178.34:3000/getArmedState", {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -86,9 +95,11 @@ export default function Dashboard() {
   const newState = !armstate;
   
   setArmstate(newState);
+  console.log(newState);
   
   try{
-        const res = await fetch("/api/setArmedState", {
+
+        const res = await fetch("https://192.168.178.34:3000/setArmedState", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

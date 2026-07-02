@@ -38,7 +38,7 @@ export default function Analytics() {
 
       //  Öffnungsstatistik
       const openingsRes = await fetch(
-        `/api/openingCount?range=${range}`,
+        `https://192.168.178.34:3000/openingCount?range=${range}`,
         {
           credentials: "include"
         }
@@ -48,7 +48,7 @@ export default function Analytics() {
 
       //  Batterieverlauf
       const batteryRes = await fetch(
-        `/api/batterytrend?range=${range}`,
+        `https://192.168.178.34:3000/batterytrend?range=${range}`,
         {
           credentials: "include"
         }
@@ -58,7 +58,7 @@ export default function Analytics() {
 
       //  Statusübersicht
       const statusRes = await fetch(
-        `/api/loginCount?range=${range}`,
+        `https://192.168.178.34:3000/loginCount?range=${range}`,
         {
           credentials: "include"
         }

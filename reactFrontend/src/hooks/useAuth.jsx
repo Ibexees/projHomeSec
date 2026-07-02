@@ -5,7 +5,7 @@ export default function useAuth() {
   const [user, setUser] = useState(null);
 
    useEffect(() => {
-    fetch("/api/protected", {
+    fetch("https://192.168.178.34:3000/protected", {
       credentials: "include",
     })
       .then(res => {
@@ -23,7 +23,7 @@ export default function useAuth() {
 
   const login = async (username, password) => {
 
-  const res = await fetch("/api/login", {
+  const res = await fetch("https://192.168.178.34:3000/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -51,8 +51,9 @@ export default function useAuth() {
   };
 
     const logout = async () => {
-    await fetch("/api/logout", {
+    await fetch("https://192.168.178.34:3000/logout", {
       credentials: "include",
+      method: "POST"
     });
 
     setUser(null);

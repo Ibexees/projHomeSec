@@ -10,12 +10,18 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const format = require('node-pg-format').format;
+const https = require('https');
+const fs = require("fs");
 
 
 app.use(cookieParser());
 
 app.use(cors({
-  origin: 'http://localhost:5173', 
+    origin: [
+    "https://localhost:5173",
+    "http://localhost:5173",
+    "https://192.168.178.34:5173"
+  ], 
   credentials: true
 }));
 app.use(express.json());
@@ -27,6 +33,13 @@ app.get('/', (req, res) => {
 app.get('/protected', authenticateToken,  (req, res) => {
   res.json({ message: 'ok', user: req.user });
 });
+
+
+
+const options = {
+  key: fs.readFileSync("localhost+2-key.pem"),
+  cert: fs.readFileSync("localhost+2.pem"),
+};
 
 function formatDate(date) {
   const d = new Date(date);
@@ -130,8 +143,8 @@ app.post('/login', async (req, res) => {
            
            res.cookie("token", token, {
             httpOnly: true,
-            secure: false, // true bei HTTPS (Production!)
-            sameSite: "lax",
+            secure: true, // true bei HTTPS (Production!)
+            sameSite: "none",
             maxAge: 15 * 60 * 1000, // 15 Minuten
             path: "/"
           });
@@ -199,27 +212,9 @@ app.post('/register', async (req, res) => {
   }
 });*/
 
-app.post('/unitUpdate', async (req, res) => {
-    let batch = req.body;
-    //console.log(batch);
-    res.sendStatus(200);
-
-    const rows = batch.map(({ topic, message, ts }) => {
-    const [state, batteryStr] = message.split("|");
-    return [topic, state, parseInt(batteryStr, 10), new Date(ts)];
-    });
-
-    const query = format(
-    "INSERT INTO sensorlog (topic, state, battery, ts) VALUES %L",
-    rows
-    );
-
-await pool.query(query);
 
 
-});
-
-app.post('/setArmedState', authenticateToken, async (req,res) => {
+app.post('/setArmedState', /*authenticateToken*/ async (req,res) => {
   const armstate = req.body.newState;
 
   console.log(armstate);
@@ -254,7 +249,7 @@ app.get('/getArmedState',  /*authenticateToken, */ async (req, res)=> {
 
 });
 
-app.get('/batterytrend', authenticateToken, async (req, res)=>{
+app.get('/batterytrend', /*authenticateToken,*/ async (req, res)=>{
 
     const range = req.query.range;
     const time_interval = parseTimeframe(range);
@@ -469,14 +464,25 @@ async function checkAlarm ()
   }
 }
 
-const mqttCon = mqtt.connect(
+/*const mqttCon = mqtt.connect(
                                 process.env.mqttbrokerIP,
                                 {
                                     username: process.env.mqttusername,
                                     password: process.env.mqttpassword
                                 }
-                            );
+                            );*/
 
+const mqttCon = mqtt.connect(
+  process.env.mqttbrokerIP,
+  {
+    username: process.env.mqttusername,
+    password: process.env.mqttpassword,
+
+    ca: fs.readFileSync("./ca.crt"),
+
+    rejectUnauthorized: true
+  }
+);
 
 mqttCon .on("connect", () => {
     mqttCon.subscribe("alarm/waschküche");
@@ -511,38 +517,89 @@ mqttCon.on("message", (topic, message) => {
 
 });
 
-//Queue von Tür und Fenstermelder Daten abbarbeiten
+// ===============================
+// UNIT UPDATE LOGIK AUSLAGERN
+// ===============================
+
+async function handleUnitUpdate(batch) {
+
+  const rows = batch.map(({ topic, message, ts }) => {
+
+    const [state, batteryStr] = message.split("|");
+
+    return [
+      topic,
+      state,
+      parseInt(batteryStr, 10),
+      new Date(ts)
+    ];
+  });
+
+  const query = format(
+    "INSERT INTO sensorlog (topic, state, battery, ts) VALUES %L",
+    rows
+  );
+
+  await pool.query(query);
+
+  await checkAlarm();
+}
+
+
+
+// ===============================
+// QUEUE PROCESSING
+// OHNE FETCH / HTTPS / SOCKETS
+// ===============================
+
 async function processQueue() {
+
   if (queue.length === 0) return;
- 
+
   // Batch erstellen
   const batch = queue.splice(0, BATCH_SIZE);
 
   try {
-    const res = await fetch("http://localhost:3000/unitUpdate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(batch),
-    });
 
-    if (!res.ok) {
-      throw new Error("HTTP error " + res.status);
-    }
-
-     await checkAlarm();
+    await handleUnitUpdate(batch);
 
   } catch (err) {
+
     console.error("Batch failed, retrying...", err);
 
-    // zurück in Queue (vorne!)
+    // zurück in Queue
     queue.unshift(...batch);
   }
 }
 
+
 // regelmäßig ausführen
 setInterval(processQueue, INTERVAL_MS);
+
+
+
+// ===============================
+// EXPRESS ROUTE
+// ===============================
+
+app.post('/unitUpdate', async (req, res) => {
+
+  try {
+
+    const batch = req.body;
+
+    await handleUnitUpdate(batch);
+
+    res.sendStatus(200);
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.sendStatus(500);
+  }
+});
+
 
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -561,8 +618,8 @@ pool.connect()
     console.error("DB connection error:", err);
   });
 
-app.listen(3000, '0.0.0.0', () => {
+https.createServer(options, app).listen(3000, '0.0.0.0', () => {
     console.log("Server running on port 3000");
-    console.log(`Swagger UI available at: http://localhost:3000/api-docs`);
-    console.log(`API JSON available at: http://localhost:3000/swagger.json`);
+    console.log(`Swagger UI available at: https://localhost:3000/api-docs`);
+    console.log(`API JSON available at: https://localhost:3000/swagger.json`);
 });
