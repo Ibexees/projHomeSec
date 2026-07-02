@@ -55,4 +55,23 @@ ALTER TABLE public.alarm_state
 ALTER COLUMN id
 ADD GENERATED ALWAYS AS IDENTITY;
 
+/*Select for Batterycurve graphic*/
+SELECT DISTINCT ON (
+    topic,
+    date_trunc('week', ts)
+)
+    topic,
+    battery,
+    date_trunc('week', ts) as day
+FROM sensorlog
+WHERE
+    ts > now() - interval '1 year'
+    AND battery <> 0
+ORDER BY
+    topic,
+    date_trunc('week', ts),
+    ts DESC;
+
+
+
 

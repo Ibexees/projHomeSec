@@ -16,6 +16,15 @@ export default function Dashboard() {
     getArmedState();
     }, []);
 
+    useEffect(() => {    
+    const interval = setInterval(() => {
+      getSensordata();
+    }, 15000);
+
+    return () => clearInterval(interval);
+
+  }, []);
+
   const turnOn = async () => {
     await fetch("https://192.168.178.34:3000/i/on");
   };
