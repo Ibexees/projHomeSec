@@ -30,8 +30,8 @@ This project combines hardware components (ESP door/window units) with a web app
 
 ## 🛠️ Technology Stack
 
-| Language | Usage | Percentage |
-|----------|-------|-----------|
+| Language | Usage | 
+|----------|-------|
 | **JavaScript** | Frontend & Backend
 | **C++** | ESP Hardware Firmware 
 
